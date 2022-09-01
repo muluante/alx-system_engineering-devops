@@ -6,3 +6,4 @@
 5. Execute
 6. Multiple Permissions
 7. Everybody
+8. James Bond
