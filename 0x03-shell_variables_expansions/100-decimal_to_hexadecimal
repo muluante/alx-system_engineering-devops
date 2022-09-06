@@ -1,2 +1,2 @@
 #!/bin/bash
-echo $(($DIVIDE/DECIMAL$#16))
+echo $(($DIVIDE/$#16=$DECIMAL))
