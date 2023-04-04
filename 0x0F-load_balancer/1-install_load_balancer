@@ -6,7 +6,7 @@ apt install haproxy=1.6.\* -y
 
 echo "ENABLED=1" >>/etc/default/haproxy
 
-haproxy_cfg="\nbackend muluante-backend\n\tbalance roundrobin\n\tserver 130773-web-01 54.174.156.103:80 check\n\tserver 13077-web-02 100.24.74.23:80 check\n\nfrontend http\n\tbind *:80\n\tmode http\n\tdefault_backend muluante-backend"
+haproxy_cfg="\nbackend muluante1-backend\n\tbalance roundrobin\n\tserver 130773-web-01 54.174.156.103:80 check\n\tserver 13077-web-02 100.24.74.23:80 check\n\nfrontend http\n\tbind *:80\n\tmode http\n\tdefault_backend muluante-backend"
 
 echo -e "$haproxy_cfg" >>/etc/haproxy/haproxy.cfg
 
