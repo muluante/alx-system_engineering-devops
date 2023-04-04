@@ -17,7 +17,7 @@ frontend  muluante-frontend
 backend muluante-backend
         balance roundrobin
         server 130773-web-01 54.174.156.103:80 check
-        server 130773-web-02 100.26.210.232:80 check
+        server 130773-web-02 100.24.74.23:80 check
 "
 echo "$server_config" | sudo tee -a /etc/haproxy/haproxy.cfg
 
