@@ -10,11 +10,11 @@ apt-get -y install haproxy
 # edit config file
 server_config=\
 "
-frontend  muluante-frontend
+frontend  learnwithmuluanteshop-frontend
         bind *:80
         mode http
-        default_backend muluante-backend
-backend muluante-backend
+        default_backend learnwithmuluanteshop-backend
+backend learnwithmuluanteshop-backend
         balance roundrobin
         server 130773-web-01 54.174.156.103:80 check
         server 130773-web-02 100.24.74.23:80 check
