@@ -1,29 +1,27 @@
 #!/usr/bin/python3
-"""
-    Python script that, exports data in the JSON format.
-"""
-
-import json
-import requests
-import sys
+"""Exports data in the JSON format"""
 
 if __name__ == "__main__":
-    usr_url = "https://jsonplaceholder.typicode.com/users/"
-    users = requests.get(usr_url).json()
 
-    data = {}
+    import json
+    import requests
+    import sys
+
+    users = requests.get("https://jsonplaceholder.typicode.com/users")
+    users = users.json()
+    todos = requests.get('https://jsonplaceholder.typicode.com/todos')
+    todos = todos.json()
+    todoAll = {}
 
     for user in users:
-        id = user.get("id")
-        url = "https://jsonplaceholder.typicode.com/users/{}/todos".format(id)
-        todos = requests.get(url).json()
+        taskList = []
+        for task in todos:
+            if task.get('userId') == user.get('id'):
+                taskDict = {"username": user.get('username'),
+                            "task": task.get('title'),
+                            "completed": task.get('completed')}
+                taskList.append(taskDict)
+        todoAll[user.get('id')] = taskList
 
-        tasks = []
-        for t in todos:
-            tasks.append({"task": t.get("title"),
-                          "completed": t.get("completed"),
-                          "username": user.get("username")})
-        data["{}".format(id)] = tasks
-
-    with open('todo_all_employees.json', 'w') as f:
-        json.dump({int(x): data[x] for x in data.keys()}, f, sort_keys=True)
+    with open('todo_all_employees.json', mode='w') as f:
+        json.dump(todoAll, f)
