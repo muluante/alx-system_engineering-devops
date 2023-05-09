@@ -1,57 +1,73 @@
 #!/usr/bin/python3
 """
-    Queries Reddit's API to print the number of occurences specified words in
-    all the hot posts for a given subreddit.
+    Task 3
 """
 import requests
 
 
-def count_words(subreddit, word_list, after=None, word_counter={}):
-    """ Recursively find all the hot posts for a given Reddit subreddit and
-        tally the number of occurences of words specified in word_list which
-        occur in the titles.
-    Args:
-        subreddit (str): The name of the subreddit that will be used to query
-        the API.
-        word_list (list of str): List containing words to look for in the
-        titles of hot posts in a subreddit.
-        after (str): ID of the last hot post in the returned result. Used to
-        get the next 100 hot posts after this ID.
-    """
-    user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36\
-    (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36'
-    headers = {'User-Agent': user_agent}
-    url = 'https://www.reddit.com/r/{}/hot/.json?limit=100'.format(subreddit)
+def recurse(subreddit, hot_list=[], after=None):
+    """ gets the number of subscribers """
     if after is not None:
-        url += '&after=' + after
-    resp = requests.get(url,
-                        headers=headers,
-                        allow_redirects=False)
-    if resp.status_code == 200:
-        resp_dict = resp.json()
-        data_dict = resp_dict.get('data', {})
-        a_list = data_dict.get('children', [])
-        for post in a_list:
-            post_dict = post.get('data', {})
-            title = post_dict.get('title')
-            if title is not None:
-                for word in title.lower().split():
-                    for i in range(len(word_list)):
-                        if word_list[i].lower() == word:
-                            word_counter[word_list[i]] = \
-                                word_counter.get(word_list[i], 0) + 1
+        url = 'https://api.reddit.com/r/' +\
+              '{}/hot.json?after={}'.format(subreddit, after)
+    else:
+        url = 'https://api.reddit.com/r/{}/hot.json'.format(subreddit)
+    header = {'user-agent': 'ianscustomthing'}
 
-        after = data_dict.get('after')
-        if after is None:
-            if word_counter != {}:
-                val_dict = {}
-                for key in word_counter:
-                    if val_dict.get(word_counter[key]) is None:
-                        val_dict[word_counter[key]] = [key]
-                    else:
-                        val_dict[word_counter[key]].append(key)
-                for key in sorted(val_dict.keys(), reverse=True):
-                    for word in sorted(val_dict[key]):
-                        print('{}: {}'.format(word, key))
+    r = requests.get(url,
+                     headers=header,
+                     allow_redirects=False)
+    if r.status_code != 200:
+        return None
+    try:
+        rj = r.json()
+    except:
+        return None
+    if rj.get('message') == 'Not Found':
+        return
+    chldrn = rj.get('data').get('children')
+    hot_list += [chld.get('data').get('title') for chld in chldrn]
+    after = rj.get('data').get('after')
+    if after is not None:
+        return recurse(subreddit, hot_list, after)
+    else:
+        return hot_list
+
+
+def print_words(word_list, hot_list):
+    """ prints the words all pretty like """
+    cnts = {}
+    for word in word_list:
+        c = 0
+        for title in hot_list:
+            t = title.lower().split()
+            if word.lower().strip() in t:
+                c += t.count(word.lower().strip())
+            '''
+            for w in title.split():
+                if word.strip().lower() in word.strip().lower():
+                    print("{}, {}".format(word.
+                                          strip().lower(), w.strip().lower()))
+                    c = c + 1
+            '''
+        if word.lower() in cnts:
+            cnts[word.lower()] += c
         else:
-            count_words(subreddit, word_list, after, word_counter)
+            cnts.update({word.lower(): c})
+    '''
+    print(hot_list)
+    cnts.update({'thing': 17})'''
+    for k, v in sorted(cnts.items(), key=lambda x: (-x[1], x[0])):
+        if cnts.get(k) != 0:
+            print("{}: {}".format(k, v))
+
+
+def count_words(subreddit, word_list):
+    """ counts dem keywords """
+    hot_list = recurse(subreddit)
+    if hot_list is None:
+        return
+    f = 0
+    if f == 1:
+        count_words(subreddit, word_list)
+    print_words(word_list, hot_list)
