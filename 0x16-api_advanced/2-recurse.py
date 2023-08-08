@@ -1,24 +1,31 @@
 #!/usr/bin/python3
-""" Queries the Reddit API and returns a list
-containing the titles of all hot articles for a given subreddit. """
-
-import requests
-headers = {"User-Agent": "ubuntu:hbtn:v1.0 (by /u/piroli_)"}
+"""
+a recursive function that queries the Reddit API and returns a list containing
+the titles of all hot articles for a given subreddit. If no results are found
+for the given subreddit, return None
+"""
+from requests import get
 
 
 def recurse(subreddit, hot_list=[], after=None):
-    url = "https://www.reddit.com/r/{}/hot.json?after={}"\
-          .format(subreddit, after)
-    request = requests.get(url, headers=headers, allow_redirects=False)
+    """returns a list containing the titles of all hot articles
+    for a given subreddit"""
+    try:
+        r = get('https://www.reddit.com/r/{}/hot.json?limit=100&&'
+                'after={}'.format(subreddit, after),
+                headers={'User-Agent': 'bc'})
+        subreddit_dict = r.json()
 
-    if request.status_code == 200:
-        for children in request.json().get("data").get("children"):
-            hot_list.append(children.get("data").get("title"))
+        for i in range(len(subreddit_dict['data']['children'])):
+            hot_list.append(subreddit_dict['data']['children'][i]
+                            ['data']['title'])
 
-        after = request.json().get("data").get("after")
-        if not after:
+        after = subreddit_dict['data']['after']
+
+        if after is None:
             return hot_list
+
         return recurse(subreddit, hot_list, after)
 
-    else:
+    except:
         return None
