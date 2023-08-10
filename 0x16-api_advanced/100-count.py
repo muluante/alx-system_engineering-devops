@@ -1,80 +1,54 @@
 #!/usr/bin/python3
-'''Functions for working with the Reddit API.
-'''
-
-import re
+"""Function to count words in all hot posts of a given Reddit subreddit."""
 import requests
-headers = {'user-agent': 'Reddit Scraper'}
-
-def recurse(subreddit, hot_list=[], after=None, count=None):
-    """Recurses and returns a list containing the titles
-    of all hot articles for a given subreddit"""
-    if after is None and count is None:
-        after = ''
-        count = 0
-
-    hot_endpoint = 'https://www.reddit.com/r/{}/hot.json?limit=100&after={}'
-
-    url = hot_endpoint.format(subreddit, after)
-    response = requests.get(url, headers=headers, allow_redirects=False)
-    if response.status_code == 200:
-        hot = response.json()
-        children = hot.get("data").get("children")
-        after = hot.get("data").get("after")
-        for child in children:
-            title = child.get("data").get("title")
-            hot_list.append(title)
-        if len(hot_list) < 1:
-            return None
-        while True:
-            if after is not None:
-                recurse(subreddit, hot_list, after, count)
-                break
-            if after is None:
-                break
-        return hot_list
-    if response.status_code == 404 or response.status_code == 302:
-        return None
 
 
+def count_words(subreddit, word_list, instances={}, after="", count=0):
+    """Prints counts of given words found in hot posts of a given subreddit.
+    Args:
+        subreddit (str): The subreddit to search.
+        word_list (list): The list of words to search for in post titles.
+        instances (obj): Key/value pairs of words/counts.
+        after (str): The parameter for the next page of the API results.
+        count (int): The parameter of results matched thus far.
+    """
+    url = "https://www.reddit.com/r/{}/hot/.json".format(subreddit)
+    headers = {
+        "User-Agent": "linux:0x16.api.advanced:v1.0.0 (by /u/bdov_)"
+    }
+    params = {
+        "after": after,
+        "count": count,
+        "limit": 100
+    }
+    response = requests.get(url, headers=headers, params=params,
+                            allow_redirects=False)
+    try:
+        results = response.json()
+        if response.status_code == 404:
+            raise Exception
+    except Exception:
+        print("")
+        return
 
-def counter():
-    """generator increasing by one"""
-    c = 0
-    while True:
-        yield c
-        c += 1
+    results = results.get("data")
+    after = results.get("after")
+    count += results.get("dist")
+    for c in results.get("children"):
+        title = c.get("data").get("title").lower().split()
+        for word in word_list:
+            if word.lower() in title:
+                times = len([t for t in title if t == word.lower()])
+                if instances.get(word) is None:
+                    instances[word] = times
+                else:
+                    instances[word] += times
 
-
-def count_words(subreddit, word_list):
-    result = recurse(subreddit)
-    if result is None:
-        print()
-    elif result is not None:
-        word_dict = {}
-
-        for text in result:
-            for word in word_list:
-                if word not in word_dict.keys():
-                    word_dict[word] = 0
-                # create regex
-                regex = re.compile(r"\b" + word + r"\b", re.I)
-                # check regex results
-                word_dict[word] += len(regex.findall(text))
-
-        s = sorted(list(word_dict.values()))
-        s.reverse()
-        reversed_dict = {}
-        counting = counter()
-        for k, v in word_dict.items():
-            reversed_dict[f"{v}.{next(counting)}"] = k
-        final = []
-        for each in s:
-            for j in reversed_dict.keys():
-                if str(each) in j:
-                    if f"{reversed_dict[j]}: {j.split('.')[0]}" not in final:
-                        final.append(f"{reversed_dict[j]}: {j.split('.')[0]}")
-
-        for each in final:
-            if ": 0" not in each:
-                print(each)
+    if after is None:
+        if len(instances) == 0:
+            print("")
+            return
+        instances = sorted(instances.items(), key=lambda kv: (-kv[1], kv[0]))
+        [print("{}: {}".format(k, v)) for k, v in instances]
+    else:
+        count_words(subreddit, word_list, instances, after, count)
