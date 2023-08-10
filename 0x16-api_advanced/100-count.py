@@ -1,85 +1,80 @@
 #!/usr/bin/python3
 '''Functions for working with the Reddit API.
 '''
+
+import re
 import requests
+headers = {'user-agent': 'Reddit Scraper'}
+
+def recurse(subreddit, hot_list=[], after=None, count=None):
+    """Recurses and returns a list containing the titles
+    of all hot articles for a given subreddit"""
+    if after is None and count is None:
+        after = ''
+        count = 0
+
+    hot_endpoint = 'https://www.reddit.com/r/{}/hot.json?limit=100&after={}'
+
+    url = hot_endpoint.format(subreddit, after)
+    response = requests.get(url, headers=headers, allow_redirects=False)
+    if response.status_code == 200:
+        hot = response.json()
+        children = hot.get("data").get("children")
+        after = hot.get("data").get("after")
+        for child in children:
+            title = child.get("data").get("title")
+            hot_list.append(title)
+        if len(hot_list) < 1:
+            return None
+        while True:
+            if after is not None:
+                recurse(subreddit, hot_list, after, count)
+                break
+            if after is None:
+                break
+        return hot_list
+    if response.status_code == 404 or response.status_code == 302:
+        return None
 
 
-def sort_histogram(histogram={}):
-    '''Sorts and prints the given histogram.
-    '''
-    histogram = list(filter(lambda kv: kv[1], histogram))
-    histogram_dict = {}
-    for item in histogram:
-        if item[0] in histogram_dict:
-            histogram_dict[item[0]] += item[1]
-        else:
-            histogram_dict[item[0]] = item[1]
-    histogram = list(histogram_dict.items())
-    histogram.sort(
-        key=lambda kv: kv[0],
-        reverse=False
-    )
-    histogram.sort(
-        key=lambda kv: kv[1],
-        reverse=True
-    )
-    res_str = '\n'.join(list(map(
-        lambda kv: '{}: {}'.format(kv[0], kv[1]),
-        histogram
-    )))
-    if res_str:
-        print(res_str)
+
+def counter():
+    """generator increasing by one"""
+    c = 0
+    while True:
+        yield c
+        c += 1
 
 
-def count_words(subreddit, word_list, histogram=[], n=0, after=None):
-    '''Counts the number of times each word in a given wordlist
-    occurs in a given subreddit.
-    '''
-    api_headers = {
-        'Accept': 'application/json',
-        'User-Agent': ' '.join([
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-            'AppleWebKit/537.36 (KHTML, like Gecko)',
-            'Chrome/97.0.4692.71',
-            'Safari/537.36',
-            'Edg/97.0.1072.62'
-        ])
-    }
-    res = requests.get(
-        '{}/r/{}/.json?sort={}&limit={}&count={}&after={}'.format(
-            'https://www.reddit.com',
-            subreddit,
-            'hot',
-            30,
-            n,
-            after if after else ''
-        ),
-        headers=api_headers,
-        allow_redirects=False
-    )
-    if not histogram:
-        word_list = list(map(lambda word: word.lower(), word_list))
-        histogram = list(map(lambda word: (word, 0), word_list))
-    if res.status_code == 200:
-        data = res.json()['data']
-        posts = data['children']
-        titles = list(map(lambda post: post['data']['title'], posts))
-        histogram = list(map(
-            lambda kv: (kv[0], kv[1] + sum(list(map(
-                lambda txt: txt.lower().split().count(kv[0]),
-                titles
-            )))),
-            histogram
-        ))
-        if len(posts) >= 30 and data['after']:
-            count_words(
-                subreddit,
-                word_list,
-                histogram,
-                n + len(posts),
-                data['after']
-            )
-        else:
-            sort_histogram(histogram)
-    else:
-        return
+def count_words(subreddit, word_list):
+    result = recurse(subreddit)
+    if result is None:
+        print()
+    elif result is not None:
+        word_dict = {}
+
+        for text in result:
+            for word in word_list:
+                if word not in word_dict.keys():
+                    word_dict[word] = 0
+                # create regex
+                regex = re.compile(r"\b" + word + r"\b", re.I)
+                # check regex results
+                word_dict[word] += len(regex.findall(text))
+
+        s = sorted(list(word_dict.values()))
+        s.reverse()
+        reversed_dict = {}
+        counting = counter()
+        for k, v in word_dict.items():
+            reversed_dict[f"{v}.{next(counting)}"] = k
+        final = []
+        for each in s:
+            for j in reversed_dict.keys():
+                if str(each) in j:
+                    if f"{reversed_dict[j]}: {j.split('.')[0]}" not in final:
+                        final.append(f"{reversed_dict[j]}: {j.split('.')[0]}")
+
+        for each in final:
+            if ": 0" not in each:
+                print(each)
