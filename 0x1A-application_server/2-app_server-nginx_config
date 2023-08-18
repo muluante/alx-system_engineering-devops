@@ -1,13 +1,18 @@
+# 2-app_server-nginx_config
+
 server {
-        listen 80 default_server;
+    listen 80 default_server;
+    listen [::]:80 default_server;
 
-        location /hbnb_static/ {
-        alias /data/web_static/current/;
-        }
+    root /var/www/html;
+    index index.html index.htm index.nginx-debian.html;
 
-        location /airbnb-onepage/ {
+    server_name _;
+
+    location /airbnb-onepage/ {
         proxy_pass http://localhost:5000;
-        add_header X-Served-By $hostname;
-        }
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
 }
 
