@@ -7,7 +7,7 @@ server {
 	# use IP of server as domian name
 	server_name 54.208.174.140
 	# customize https response header
-	add_header X—Served—By 130773—web—01;
+	add_header X-Served-By 130773—web—01;
 	# server /airbnb—onepage/ route on AirBnB clone v3
 	location = /airbnb—onepage/ {
 	proxy_pass http://127.0.0.1:5000/airbnb—onepage/ ;
