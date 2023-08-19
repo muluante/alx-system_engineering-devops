@@ -1,18 +1,21 @@
 # 2-app_server-nginx_config
 
 server {
-    listen 80 default_server;
-    listen [::]:80 default_server;
-
-    root /var/www/html;
-    index index.html index.htm index.nginx-debian.html;
-
-    server_name _;
-
-    location /airbnb-onepage/ {
-        proxy_pass http://localhost:5000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+   
+listen 80 default server;
+listen [ : :
+] : 80 default server;
+# use IP of server as domian name
+server name 54.208.174.140
+# customize https response header
+add header X—Server—By 130773—web—01;
+# server /airbnb—onepage/ route on AirBnB clone v3
+location = /airbnb—onepage/ {
+proxy pass http://127.0.0.1 : 5000/ airbnb—onepage/ ;
+error page 404 / 404 . html;
+location / 404 {
+root /var/www/html;
+internal;
     }
 }
 
